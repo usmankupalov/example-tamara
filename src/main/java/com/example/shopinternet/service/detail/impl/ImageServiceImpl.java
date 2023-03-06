@@ -15,6 +15,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -89,6 +90,11 @@ public class ImageServiceImpl implements ImageService {
     @Override
     public Image findImageByImageName(String imageName) {
         return imageRepository.findImageByImageName(imageName);
+    }
+
+    @Override
+    public List<Image> getImages() {
+        return imageRepository.findAll();
     }
 
 

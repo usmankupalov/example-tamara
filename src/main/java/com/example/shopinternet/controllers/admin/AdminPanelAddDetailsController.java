@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -19,7 +20,11 @@ import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBui
 
 import javax.validation.constraints.Min;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -47,6 +52,8 @@ public class AdminPanelAddDetailsController {
 
     @Autowired
     private ImageService imageService;
+
+    private final Path root = Paths.get("images");
 
 //    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/models")
@@ -325,18 +332,16 @@ public class AdminPanelAddDetailsController {
         if (engine != null) {
             if (!file.isEmpty()) {
                 try {
-                    imageService.save(file);
+                    String uuidFile = UUID.randomUUID().toString();
+                    String filename = uuidFile + "." + "jpg";
+                    Files.copy(file.getInputStream(), this.root.resolve(filename));
                     Image image = new Image();
-                    List<Image> fileList = imageService.loadAll().map(path -> {
-                        String filename = path.getFileName().toString();
-                        String url = MvcUriComponentsBuilder
-                                .fromMethodName(AdminPanelAddDetailsController.class, "getImage", path.getFileName().toString()).build().toString();
-                        image.setImageName(filename);
-                        image.setImagePath(url);
-                        imageService.addImage(image);
-                        return image;
-                    }).collect(Collectors.toList());
-
+                    String url = MvcUriComponentsBuilder
+                            .fromMethodName(AdminPanelAddDetailsController.class,
+                                    "getImage", filename).build().toString();
+                    image.setImageName(filename);
+                    image.setImagePath(url);
+                    imageService.addImage(image);
                     detail.setEngine(engine);
                     detail.setImage(image);
                     detailService.addDetail(detail);
@@ -353,8 +358,7 @@ public class AdminPanelAddDetailsController {
     @GetMapping("/images/{imageName}")
     public ResponseEntity<?> getImage(@PathVariable(value = "imageName") String imageName) {
         Resource image = imageService.load(imageName);
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; imageName=\"" + image.getFilename() + "\"").body(image);
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(image);
     }
 
 }

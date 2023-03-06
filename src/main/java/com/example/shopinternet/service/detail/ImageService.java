@@ -6,6 +6,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.stream.Stream;
 
 public interface ImageService {
@@ -15,4 +16,5 @@ public interface ImageService {
     Stream<Path> loadAll();
     void addImage(Image image);
     Image findImageByImageName(String imageName);
+    List<Image> getImages();
 }

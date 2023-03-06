@@ -17,8 +17,10 @@ import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBui
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/v1.0")
@@ -31,21 +33,22 @@ public class AdminPanelCatalog {
     @Autowired
     private ImageService imageService;
 
+    private final Path root = Paths.get("images");
+
     @PostMapping("/catalogs")
     public ResponseEntity<?> addCatalog(Catalog catalog, @RequestParam("file") MultipartFile file) throws IOException {
         if (!file.isEmpty()) {
             try {
-                imageService.save(file);
+                String uuidFile = UUID.randomUUID().toString();
+                String filename = uuidFile + "." + "jpg";
+                Files.copy(file.getInputStream(), this.root.resolve(filename));
                 Image image = new Image();
-                List<Image> images = imageService.loadAll().map(path -> {
-                    String filename = path.getFileName().toString();
-                    String url = MvcUriComponentsBuilder
-                            .fromMethodName(AdminPanelAddDetailsController.class, "getImage", path.getFileName().toString()).build().toString();
-                    image.setImageName(filename);
-                    image.setImagePath(url);
-                    imageService.addImage(image);
-                    return image;
-                }).collect(Collectors.toList());
+                String url = MvcUriComponentsBuilder
+                        .fromMethodName(AdminPanelAddDetailsController.class,
+                                "getImage", filename).build().toString();
+                image.setImageName(filename);
+                image.setImagePath(url);
+                imageService.addImage(image);
 
                 catalog.setImage(image);
                 catalogService.addCatalog(catalog);
@@ -65,22 +68,20 @@ public class AdminPanelCatalog {
         if (catalog != null) {
             if (!file.isEmpty()) {
                 try {
-                    imageService.save(file);
+                    String uuidFile = UUID.randomUUID().toString();
+                    String filename = uuidFile + "." + "jpg";
+                    Files.copy(file.getInputStream(), this.root.resolve(filename));
                     Image image = new Image();
-                    List<Image> images = imageService.loadAll().map(path -> {
-                        String filename = path.getFileName().toString();
-                        String url = MvcUriComponentsBuilder
-                                .fromMethodName(AdminPanelAddDetailsController.class, "getImage", path.getFileName().toString()).build().toString();
-                        image.setImageName(filename);
-                        image.setImagePath(url);
-                        imageService.addImage(image);
-                        return image;
-                    }).collect(Collectors.toList());
+                    String url = MvcUriComponentsBuilder
+                            .fromMethodName(AdminPanelAddDetailsController.class,
+                                    "getImage", filename).build().toString();
+                    image.setImageName(filename);
+                    image.setImagePath(url);
 
                     imageService.addImage(image);
                     catalogService.updateCatalog(catalogDto.getCatalogName(), catalogDto.getPrice(), catalogDto.getAmount(),
                             catalogDto.getCatalogType(), image, catalogsId);
-                    return new ResponseEntity<>(catalog, HttpStatus.NO_CONTENT);
+                    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
                 } catch (Exception e) {
                     return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(e);
                 }
